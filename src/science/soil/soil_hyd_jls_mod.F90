@@ -29,7 +29,7 @@ USE hyd_con_ic_mod, ONLY: hyd_con_ic
 USE gauss_mod,      ONLY: gauss
 
 !Use in relevant variables
-USE jules_hydrology_mod,  ONLY: zw_max
+USE jules_hydrology_mod,  ONLY: zw_max, l_darcy_lsh_all
 USE water_constants_mod,  ONLY: rho_water  !  density of pure water (kg/m3)
 USE jules_soil_mod,       ONLY: gamma_w, l_holdwater
 
@@ -112,14 +112,6 @@ REAL(KIND=real_jlslsm), INTENT(OUT) ::                                         &
     ! Moisture content in deep layer (kg/m2).
   smclsatzw(npnts)
     ! Moisture content in deep layer at saturation (kg/m2).
-
-!-----------------------------------------------------------------------------
-! Local parameters:
-!-----------------------------------------------------------------------------
-! If l_darcy_lsh_all = .TRUE. allow fully connectivity between layers
-! nhsyd and nhsyd+1 when L_TOP=TRUE
-! LOGICAL, PARAMETER :: l_darcy_lsh_all = .TRUE.
-LOGICAL, PARAMETER :: l_darcy_lsh_all = .FALSE.
 
 !-----------------------------------------------------------------------------
 ! Local scalars:

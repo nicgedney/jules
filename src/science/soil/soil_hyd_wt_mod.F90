@@ -33,6 +33,9 @@ USE calc_zw2_mod,  ONLY: calc_zw2
 
 USE jules_water_tracers_mod, ONLY: l_wtrac_jls
 
+!Use in relevant variables
+USE jules_hydrology_mod,  ONLY: l_calc_zw2
+
 USE parkind1,     ONLY: jprb, jpim
 USE yomhook,      ONLY: lhook, dr_hook
 
@@ -140,13 +143,6 @@ REAL(KIND=real_jlslsm), INTENT(OUT) ::                                         &
     ! Water tracer base flow (kg/m2/s).
   surf_roff_inc_wtrac(npnts,n_wtrac_jls)
     ! Increment to surface water tracer runoff (kg m-2 s-1).
-
-!-----------------------------------------------------------------------------
-! Local parameters:
-!-----------------------------------------------------------------------------
-! LOGICAL, PARAMETER :: l_calc_zw2 = .TRUE.
-LOGICAL, PARAMETER :: l_calc_zw2 = .FALSE.
-! Whether to call calc_zw or calc_zw2
 
 !-----------------------------------------------------------------------------
 ! Local scalars:
