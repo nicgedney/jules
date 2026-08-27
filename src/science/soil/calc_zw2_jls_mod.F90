@@ -257,11 +257,11 @@ DO j = 1,soil_pts
 
   !-----------------------------------------------------------------------
   ! Water table taken as minimum estimated from water table layer
-  ! and the layers below: 
+  ! and the layers below:
   !-----------------------------------------------------------------------
   IF (nzw < nshyd+1) THEN
     DO n = nzw+1,nshyd+1,1
-       zw_l(i,n) = MIN(zw_l(i,n),zw_l(i,nzw))
+      zw_l(i,n) = MIN(zw_l(i,n),zw_l(i,nzw))
     END DO
   END IF
 
@@ -279,7 +279,7 @@ DO j = 1,soil_pts
       wgt(n) = ABS(0.5*(zdepth(n-1)+zdepth(n))-zw_l_min)
       wgt(n) = MAX(wgt(n),0.01) ! limit so that does not get zw stuck
       wgt_tot=wgt_tot+wgt(n)
-   END IF
+    END IF
   END DO
 
   dwgt_tot=0.0
@@ -287,7 +287,7 @@ DO j = 1,soil_pts
     IF (n >= nzw-2 .AND. n <= nzw+1) THEN
       dwgt_tot=dwgt_tot+(wgt_tot-wgt(n))
       zw(i) = zw(i) + (wgt_tot-wgt(n))*zw_l(i,n)
-   END IF
+    END IF
   END DO
 
   IF (nzw == 1) THEN
@@ -308,7 +308,7 @@ DO j = 1,soil_pts
   IF (zw(i) >  zw_max) THEN
     zw(i) = zw_max
   END IF
-  
+
 END DO
 !$OMP END PARALLEL DO
 
