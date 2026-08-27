@@ -8,15 +8,19 @@
 
 !   Purpose: To calculate the mean water table depth from the soil
 !            moisture deficit. This is based on Koster et al., 2000.,
-!            using the Newton-Raphson method. However it estimates a
-!            water table for each soil layer by considering the soil
-!            moisture deficit up to that soil layer. These separate
-!            estimates are merged. This results in a generally higher
-!            water table and limits the impact of root zone abstraction
-!            limiting the assumption in Koster et al., 2000,
-!            i.e. the assumption that soil moisture profile above
-!            the water table is determined from the balance between
-!            pressure head gradient and gravity.
+!            whereby the soil moisture profile above the water table
+!            is inferred from the balance between pressure head
+!            pressure head gradient and gravity, and using the
+!            Newton-Raphson method the water table depth is
+!            then estimated (as in calc_zw_mod).
+!            In this routine, instead of using the total column
+!            moisture deficit, the water table is estimated "upto"
+!            each soil layer by considering the soil moisture deficit
+!            up to that soil layer. These separate estimates are
+!            then merged. This generally simulates a higher water
+!            table as it reduces the impact of root zone abstraction,
+!            which is not considered in Koster et al., 2000.
+
 
 ! Documentation: UNIFIED MODEL DOCUMENTATION PAPER NO 25
 
@@ -235,7 +239,9 @@ DO j = 1,soil_pts
 
   END DO ! layers
 
+  !-----------------------------------------------------------------------
   ! find layer with water table depth for smallest zw_l estimate:
+  !-----------------------------------------------------------------------
   zw_l_min = zw_max
   DO n=1,nshyd+1
     zw_l_min = MIN(zw_l_min,zw_l(i,n))
@@ -249,6 +255,16 @@ DO j = 1,soil_pts
   END DO
   nzw = MAX(1,nzw)
 
+  !-----------------------------------------------------------------------
+  ! Water table taken as minimum estimated from water table layer
+  ! and the layers below: 
+  !-----------------------------------------------------------------------
+  IF (nzw < nshyd+1) THEN
+    DO n = nzw+1,nshyd+1,1
+       zw_l(i,n) = MIN(zw_l(i,n),zw_l(i,nzw))
+    END DO
+  END IF
+
   zw(i)=0.0
   wgt_tot=0.0
   wgt(:)=0.0
@@ -260,10 +276,10 @@ DO j = 1,soil_pts
   !---------------------------------------------------------------------------
   DO n=1,nshyd+1
     IF (n >= nzw-2 .AND. n <= nzw+1) THEN
-      wgt(n) = ABS(0.5*(zdepth(nzw-1)+zdepth(nzw))-zw_l_min)
+      wgt(n) = ABS(0.5*(zdepth(n-1)+zdepth(n))-zw_l_min)
       wgt(n) = MAX(wgt(n),0.01) ! limit so that does not get zw stuck
       wgt_tot=wgt_tot+wgt(n)
-    END IF
+   END IF
   END DO
 
   dwgt_tot=0.0
@@ -271,7 +287,7 @@ DO j = 1,soil_pts
     IF (n >= nzw-2 .AND. n <= nzw+1) THEN
       dwgt_tot=dwgt_tot+(wgt_tot-wgt(n))
       zw(i) = zw(i) + (wgt_tot-wgt(n))*zw_l(i,n)
-    END IF
+   END IF
   END DO
 
   IF (nzw == 1) THEN
@@ -280,8 +296,11 @@ DO j = 1,soil_pts
     zw(i)=zw(i)/dwgt_tot
   END IF
 
+  !-----------------------------------------------------------------------
   ! scheme is designed to stop the over-estimate of water table depth
-  ! therefore ensure new scheme does not set a deeper water table:
+  ! due to root zone therefore ensure new scheme does not set a deeper
+  ! water table than it would do with full soil moisture column:
+  !-----------------------------------------------------------------------
   IF (zw(i) > zw_l(i,1)) THEN
     zw(i) = zw_l(i,1)
   END IF
@@ -289,7 +308,7 @@ DO j = 1,soil_pts
   IF (zw(i) >  zw_max) THEN
     zw(i) = zw_max
   END IF
-
+  
 END DO
 !$OMP END PARALLEL DO
 
