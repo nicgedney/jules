@@ -54,7 +54,7 @@ SUBROUTINE physiol (                                                           &
   rootc_cpft, sthu_irr_soilt, frac_irr_soilt, frac_irr_surft, dvi_cpft,        &
   !crop_vars_mod (OUT)
   gs_irr_surft, smc_irr_soilt, wt_ext_irr_surft, gc_irr_surft,                 &
-  gs_nir_surft, gc_nir_surft,                                                  &
+  gs_nir_surft,                                                                &
   !p_s_parms (IN)
   bexp_soilt, sathh_soilt, v_close_pft, v_open_pft,                            &
   !ancil_info (IN)
@@ -360,7 +360,6 @@ REAL(KIND=real_jlslsm), INTENT(OUT) ::                                         &
         wt_ext_irr_surft(land_pts,sm_levels,nsurft)
 REAL(KIND=real_jlslsm), INTENT(OUT) :: gc_irr_surft(land_pts,nsurft)
 REAL(KIND=real_jlslsm), INTENT(OUT) :: gs_nir_surft(land_pts,nsurft)
-REAL(KIND=real_jlslsm), INTENT(OUT) :: gc_nir_surft(land_pts,nsurft)
 
 !ancil_info (IN)
 LOGICAL, INTENT(IN) :: l_soil_point(land_pts)
@@ -494,6 +493,8 @@ fsmc_nir(land_pts,npft)                                                        &
 !                                 ! WORK Bare soil conductance under
 !                                 !      canopy
 ,gsoil_nir_under_canopy(land_pts)                                              &
+!                                 ! WORK Bare soil conductance under
+!                                 !      canopy on non-irrigated fraction.
 ,gsoil_irr_under_canopy(land_pts)
 !                                 ! WORK Bare soil conductance under
 !                                 !      canopy on irrigated fraction.
@@ -553,7 +554,21 @@ REAL(KIND=real_jlslsm) ::                                                      &
                             ! WORK Fraction of ground below canopy
 !                                 !      contributing to evaporation.
 ,fsoil_irr_tot(land_pts)                                                       &
+                            ! WORK Fraction of ground below canopy
+!                                 !      contributing to evaporation
+!                                 !      over irrigated fraction.
 ,fsoil_nir_tot(land_pts)                                                       &
+                            ! WORK Fraction of ground below canopy
+!                                 !      contributing to evaporation
+!                                 !      over non-irrigated fraction.
+,fsoil_irr_tot_tmp                                                             &
+                            ! WORK Fraction of ground below canopy
+!                                 !      contributing to evaporation
+!                                 !      over irrigated fraction.
+,fsoil_nir_tot_tmp                                                             &
+                            ! WORK Fraction of ground below canopy
+!                                 !      contributing to evaporation
+!                                 !      over non-irrigated fraction.
 ,fsoil_tot(land_pts)                                                           &
                             ! WORK Total fraction of soil
 !                                 !      contributing to evaporation
@@ -653,7 +668,7 @@ l_do_omp    = land_pts>omp_cutoff
 !$OMP sthu_irr_soilt, smvcst_soilt, gsoil_soilt, sthu_soilt,                   &
 !$OMP gc_corr, n_wtrac_jls, smc_soilt_wtrac, growth_sug_pft, growth_sug_gb,    &
 !$OMP fsmc_nir, wt_ext_nir_soilt, wt_ext_nir_type, sthu_nir_soilt,             &
-!$OMP frac_irr_soilt,fsoil_irr_tot,fsoil_nir_tot, gs_nir_type,                 &
+!$OMP frac_irr_soilt, fsoil_irr_tot, fsoil_nir_tot, gs_nir_type,               &
 !$OMP gsoil_nir_soilt,lwp_c_pft,l_wtrac_jls,frac_irr_surft)
 
 DO n = 1,npft
@@ -2236,24 +2251,25 @@ IF (l_irrig_dmd) THEN
 !$OMP             smc_nir_soilt, smc_soilt, sthu_nir_soilt,                    &
 !$OMP             smvcst_soilt, gs_irr_surft, gc_irr_surft, nsurft, l_do_omp,  &
 !$OMP             fsoil_irr_tot, fsoil_nir_tot, frac_irr_soilt,                &
-!$OMP             frac_irr_surft, l_soil_evap_irrig_expl)
+!$OMP             fsoil_irr_tot_tmp, fsoil_nir_tot_tmp, frac_irr_surft,        &
+!$OMP             l_soil_evap_irrig_expl)
   DO m = 1,nsoilt
 !$OMP DO SCHEDULE(STATIC)
     DO l = 1,land_pts
       IF (l_soil_evap_irrig_expl) THEN
         IF (frac_irr_soilt(l,m) > 0.0) THEN
-          fsoil_irr_tot(l) = fsoil_irr_tot(l)/frac_irr_soilt(l,m)
-          smc_irr_soilt(l,m) = (1.0 - fsoil_irr_tot(l) ) *                     &
-             smc_irr_soilt(l,m) + fsoil_irr_tot(l) *                           &
+          fsoil_irr_tot_tmp = fsoil_irr_tot(l)/frac_irr_soilt(l,m)
+          smc_irr_soilt(l,m) = (1.0 - fsoil_irr_tot_tmp ) *                    &
+             smc_irr_soilt(l,m) + fsoil_irr_tot_tmp *                          &
              rho_water * dzsoil(1) *                                           &
              MAX(0.0,sthu_irr_soilt(l,m,1)) * smvcst_soilt(l,m,1)
         ELSE
           smc_irr_soilt(l,m) = 0.0
         END IF
         IF (1.0 - frac_irr_soilt(l,m) > 0.0) THEN
-          fsoil_nir_tot(l) = fsoil_nir_tot(l)/(1.0-frac_irr_soilt(l,m))
-          smc_nir_soilt(l,m) = (1.0 - fsoil_nir_tot(l)) *                      &
-               smc_nir_soilt(l,m) + fsoil_nir_tot(l) *                         &
+          fsoil_nir_tot_tmp = fsoil_nir_tot(l)/(1.0-frac_irr_soilt(l,m))
+          smc_nir_soilt(l,m) = (1.0 - fsoil_nir_tot_tmp) *                     &
+               smc_nir_soilt(l,m) + fsoil_nir_tot_tmp *                        &
                rho_water * dzsoil(1) *                                         &
               MAX(0.0,sthu_nir_soilt(l,m,1)) * smvcst_soilt(l,m,1)
         ELSE
